@@ -20,11 +20,12 @@ function getNative() {
         return null;
     try {
         // Try package name first (npm install), then relative path (git install / monorepo)
+        // Note: from dist/fetch.js, cronet-node is at ../../cronet-node/
         try {
             native = require("cronet-node");
         }
         catch {
-            native = require("../cronet-node/index.js");
+            native = require("../../cronet-node/index.js");
         }
         usingCronet = true;
         return native;
