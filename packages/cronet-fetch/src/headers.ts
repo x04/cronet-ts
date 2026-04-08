@@ -21,31 +21,10 @@ function normalizeHeaderValue(value: string): string {
   return value.replace(/^[\t\n\f\r ]+|[\t\n\f\r ]+$/g, "");
 }
 
-// Headers that cannot be set programmatically
-const FORBIDDEN_HEADERS = new Set([
-  "accept-charset",
-  "accept-encoding",
-  "access-control-request-headers",
-  "access-control-request-method",
-  "connection",
-  "content-length",
-  "cookie",
-  "cookie2",
-  "date",
-  "dnt",
-  "expect",
-  "host",
-  "keep-alive",
-  "origin",
-  "referer",
-  "te",
-  "trailer",
-  "transfer-encoding",
-  "upgrade",
-  "via",
-]);
-
-const FORBIDDEN_RESPONSE_HEADERS = new Set(["set-cookie", "set-cookie2"]);
+// In a browser, certain headers are forbidden for security (CORS).
+// cronet-ts is a server-side library — no restrictions apply.
+const FORBIDDEN_HEADERS = new Set<string>();
+const FORBIDDEN_RESPONSE_HEADERS = new Set<string>();
 
 export type HeadersGuard =
   | "immutable"
