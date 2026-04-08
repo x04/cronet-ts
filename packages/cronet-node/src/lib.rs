@@ -142,8 +142,6 @@ pub struct NapiRequestConfig {
     pub max_redirects: Option<u32>,
     pub disable_cache: Option<bool>,
     pub proxy_url: Option<String>,
-    /// When true, uses a fresh ephemeral engine so no cookies leak between requests.
-    pub disable_cookie_jar: Option<bool>,
 }
 
 #[napi(object)]
@@ -198,27 +196,7 @@ fn build_request_config(config: &NapiRequestConfig) -> RequestConfig {
     }
 }
 
-fn build_ephemeral_engine(proxy_url: Option<&str>) -> Result<Arc<Engine>> {
-    let base = ENGINE_PARAMS.get();
-    let params = EngineParams {
-        user_agent: base.and_then(|p| p.user_agent.clone()),
-        enable_quic: base.map_or(true, |p| p.enable_quic),
-        enable_http2: base.map_or(true, |p| p.enable_http2),
-        enable_brotli: base.map_or(true, |p| p.enable_brotli),
-        http_cache_mode: base.map_or(HttpCacheMode::InMemory, |p| p.http_cache_mode),
-        http_cache_max_size: base.map_or(10 * 1024 * 1024, |p| p.http_cache_max_size),
-        proxy_url: proxy_url.map(|s| s.to_string()),
-        ..Default::default()
-    };
-    let engine = Engine::new(params)
-        .map_err(|e| Error::from_reason(format!("Failed to create ephemeral engine: {e}")))?;
-    Ok(Arc::new(engine))
-}
-
-fn resolve_engine(proxy_url: &Option<String>, disable_cookie_jar: bool) -> Result<Arc<Engine>> {
-    if disable_cookie_jar {
-        return build_ephemeral_engine(proxy_url.as_deref());
-    }
+fn resolve_engine(proxy_url: &Option<String>) -> Result<Arc<Engine>> {
     match proxy_url {
         Some(url) if !url.is_empty() => get_engine_for_proxy(url),
         _ => Ok(get_engine().clone()),
@@ -246,8 +224,7 @@ fn build_napi_response(info: cronet::UrlResponseInfo, body: Vec<u8>) -> NapiResp
 
 #[napi]
 pub async fn execute_request(config: NapiRequestConfig) -> Result<NapiResponse> {
-    let disable_cookie_jar = config.disable_cookie_jar.unwrap_or(false);
-    let engine = resolve_engine(&config.proxy_url, disable_cookie_jar)?;
+    let engine = resolve_engine(&config.proxy_url)?;
     let req_config = build_request_config(&config);
 
     let response = get_runtime()
@@ -268,8 +245,7 @@ pub fn execute_streaming_request(
     config: NapiRequestConfig,
     on_chunk: JsFunction,
 ) -> Result<AsyncTask<StreamingRequestTask>> {
-    let disable_cookie_jar = config.disable_cookie_jar.unwrap_or(false);
-    let engine = resolve_engine(&config.proxy_url, disable_cookie_jar)?;
+    let engine = resolve_engine(&config.proxy_url)?;
     let req_config = build_request_config(&config);
 
     let tsfn: ThreadsafeFunction<Option<Vec<u8>>, ErrorStrategy::Fatal> = on_chunk

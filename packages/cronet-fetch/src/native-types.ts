@@ -12,7 +12,6 @@ export interface NapiRequestConfig {
   maxRedirects?: number;
   disableCache?: boolean;
   proxyUrl?: string;
-  disableCookieJar?: boolean;
 }
 
 export interface NapiResponseHeader {
