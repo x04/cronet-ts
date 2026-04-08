@@ -61,11 +61,22 @@ function getPlatformKey() {
 const key = getPlatformKey()
 const { file, package: pkg } = platforms[key]
 
-// Try local file first (development), then installed platform package
+// Resolution order:
+// 1. Local file next to this loader (dev build)
+// 2. Sibling platform package directory (git/monorepo install)
+// 3. npm-installed platform package (@aspect-build/cronet-fetch-*)
 const localPath = join(__dirname, file)
+const siblingPath = join(__dirname, '..', `cronet-fetch-${key}`, file)
+
 if (existsSync(localPath)) {
   try {
     nativeBinding = require(localPath)
+  } catch (e) {
+    loadError = e
+  }
+} else if (existsSync(siblingPath)) {
+  try {
+    nativeBinding = require(siblingPath)
   } catch (e) {
     loadError = e
   }

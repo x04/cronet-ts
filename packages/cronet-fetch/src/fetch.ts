@@ -35,7 +35,12 @@ function getNative(): NativeModule | null {
   if (native) return native;
   if (nativeLoadFailed) return null;
   try {
-    native = require("cronet-node");
+    // Try package name first (npm install), then relative path (git install / monorepo)
+    try {
+      native = require("cronet-node");
+    } catch {
+      native = require("../cronet-node/index.js");
+    }
     usingCronet = true;
     return native;
   } catch {

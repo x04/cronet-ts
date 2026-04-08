@@ -3,6 +3,10 @@ node_modules/
 
 # Build output
 dist/
+# But keep cronet-fetch dist (needed for git installs)
+!packages/cronet-fetch/dist/
+
+# Rust build artifacts
 target/
 
 # Environment
