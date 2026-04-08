@@ -68,6 +68,8 @@ export interface CronetEngineInit {
   cacheMode?: string;
   cacheMaxSize?: number;
   proxyUrl?: string;
+  /** Enable Cronet's internal cookie jar. Disabled by default to match Node fetch behavior. */
+  enableCookieJar?: boolean;
 }
 
 export interface CronetFetchInit extends CronetRequestInit {

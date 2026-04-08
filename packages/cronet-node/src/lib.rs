@@ -16,6 +16,8 @@ static ENGINE: OnceCell<Arc<Engine>> = OnceCell::new();
 static ENGINE_PARAMS: OnceCell<EngineParams> = OnceCell::new();
 // Pool of proxy-specific engines, keyed by proxy URL
 static PROXY_ENGINES: OnceCell<Mutex<HashMap<String, Arc<Engine>>>> = OnceCell::new();
+// Cookie jar is disabled by default (Node fetch behavior). Enable via initEngine({ enableCookieJar: true }).
+static COOKIE_JAR_ENABLED: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 fn get_runtime() -> &'static tokio::runtime::Runtime {
     RUNTIME.get_or_init(|| {
@@ -86,10 +88,15 @@ pub struct NapiEngineConfig {
     pub cache_mode: Option<String>,
     pub cache_max_size: Option<i64>,
     pub proxy_url: Option<String>,
+    /// Enable Cronet's internal cookie jar. Disabled by default to match Node fetch behavior.
+    pub enable_cookie_jar: Option<bool>,
 }
 
 #[napi]
 pub fn init_engine(config: Option<NapiEngineConfig>) -> Result<()> {
+    let cookie_jar = config.as_ref().and_then(|c| c.enable_cookie_jar).unwrap_or(false);
+    COOKIE_JAR_ENABLED.store(cookie_jar, std::sync::atomic::Ordering::Relaxed);
+
     let params = if let Some(cfg) = config {
         EngineParams {
             user_agent: cfg.user_agent,
@@ -196,7 +203,27 @@ fn build_request_config(config: &NapiRequestConfig) -> RequestConfig {
     }
 }
 
+fn build_ephemeral_engine(proxy_url: Option<&str>) -> Result<Arc<Engine>> {
+    let base = ENGINE_PARAMS.get();
+    let params = EngineParams {
+        user_agent: base.and_then(|p| p.user_agent.clone()),
+        enable_quic: base.map_or(true, |p| p.enable_quic),
+        enable_http2: base.map_or(true, |p| p.enable_http2),
+        enable_brotli: base.map_or(true, |p| p.enable_brotli),
+        http_cache_mode: base.map_or(HttpCacheMode::InMemory, |p| p.http_cache_mode),
+        http_cache_max_size: base.map_or(10 * 1024 * 1024, |p| p.http_cache_max_size),
+        proxy_url: proxy_url.map(|s| s.to_string()),
+        ..Default::default()
+    };
+    let engine = Engine::new(params)
+        .map_err(|e| Error::from_reason(format!("Failed to create ephemeral engine: {e}")))?;
+    Ok(Arc::new(engine))
+}
+
 fn resolve_engine(proxy_url: &Option<String>) -> Result<Arc<Engine>> {
+    if !COOKIE_JAR_ENABLED.load(std::sync::atomic::Ordering::Relaxed) {
+        return build_ephemeral_engine(proxy_url.as_deref());
+    }
     match proxy_url {
         Some(url) if !url.is_empty() => get_engine_for_proxy(url),
         _ => Ok(get_engine().clone()),

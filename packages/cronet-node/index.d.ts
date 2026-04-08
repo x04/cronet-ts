@@ -11,6 +11,8 @@ export interface NapiEngineConfig {
   cacheMode?: string
   cacheMaxSize?: number
   proxyUrl?: string
+  /** Enable Cronet's internal cookie jar. Disabled by default to match Node fetch behavior. */
+  enableCookieJar?: boolean
 }
 export declare function initEngine(config?: NapiEngineConfig | undefined | null): void
 export interface NapiRequestConfig {

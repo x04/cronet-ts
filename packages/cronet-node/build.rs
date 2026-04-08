@@ -8,6 +8,9 @@ fn main() {
     match target_os.as_str() {
         "macos" => {
             println!("cargo:rustc-cdylib-link-arg=-Wl,-rpath,@loader_path");
+            // Override the default install name (absolute path into target/release/deps/)
+            // to prevent dyld from treating it as a self-dependency and deadlocking.
+            println!("cargo:rustc-cdylib-link-arg=-Wl,-install_name,@rpath/cronet_node.node");
         }
         "linux" => {
             println!("cargo:rustc-cdylib-link-arg=-Wl,-rpath,$ORIGIN");

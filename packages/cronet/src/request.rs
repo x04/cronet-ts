@@ -10,7 +10,9 @@ use crate::upload::UploadDataProvider;
 
 const READ_BUFFER_SIZE: u64 = 32 * 1024; // 32KB
 
-// Send-safe wrappers for raw Cronet pointers
+// Send-safe wrappers for raw Cronet pointers.
+// These do NOT implement Drop — cleanup is handled by StreamingResponse::drop
+// which controls destruction order (request before callback before state).
 struct SendableRequest(Cronet_UrlRequestPtr);
 unsafe impl Send for SendableRequest {}
 
@@ -266,6 +268,36 @@ pub struct StreamingResponse {
     _executor: ThreadedExecutor,
     _request: SendableRequest,
     _callback: SendableCallback,
+}
+
+impl Drop for StreamingResponse {
+    fn drop(&mut self) {
+        unsafe {
+            // Destroy the request first — this may synchronously fire on_canceled
+            // which is fine since the callback and state are still alive.
+            if !self._request.0.is_null() {
+                Cronet_UrlRequest_Destroy(self._request.0);
+                self._request.0 = std::ptr::null_mut();
+            }
+
+            // Reclaim the CallbackState that was Box::into_raw'd during setup,
+            // then destroy the callback object.
+            if !self._callback.0.is_null() {
+                let ctx =
+                    Cronet_UrlRequestCallback_GetClientContext(self._callback.0) as *mut CallbackState;
+                if !ctx.is_null() {
+                    // Set context to null first to prevent callbacks from using freed state
+                    Cronet_UrlRequestCallback_SetClientContext(
+                        self._callback.0,
+                        std::ptr::null_mut(),
+                    );
+                    drop(Box::from_raw(ctx));
+                }
+                Cronet_UrlRequestCallback_Destroy(self._callback.0);
+                self._callback.0 = std::ptr::null_mut();
+            }
+        }
+    }
 }
 
 impl StreamingResponse {

@@ -143,9 +143,18 @@ impl Engine {
 
 impl Drop for Engine {
     fn drop(&mut self) {
-        unsafe {
-            let _ = Cronet_Engine_Shutdown(self.ptr);
-            Cronet_Engine_Destroy(self.ptr);
+        let ptr = self.ptr;
+        self.ptr = std::ptr::null_mut();
+        if !ptr.is_null() {
+            // Shutdown can block waiting for in-flight requests and executor threads.
+            // Run it on a detached thread to avoid deadlocking the tokio runtime.
+            // Safety: Engine is Send+Sync, and we've taken sole ownership of the pointer.
+            let wrapper = ptr as usize;
+            std::thread::spawn(move || unsafe {
+                let p = wrapper as Cronet_EnginePtr;
+                let _ = Cronet_Engine_Shutdown(p);
+                Cronet_Engine_Destroy(p);
+            });
         }
     }
 }
