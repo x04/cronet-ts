@@ -14,18 +14,17 @@ target/
 chromium/
 depot_tools/
 
-# Native addon binaries (built per-platform)
-*.node
+# Native addon binaries (dev builds in cronet-node)
+packages/cronet-node/*.node
+packages/cronet-node/*.dylib
+packages/cronet-node/*.so
+packages/cronet-node/icudtl.dat
 
-# Cronet shared libraries (built from source)
+# Cronet shared libraries (build intermediates)
 packages/cronet-sys/lib/
-packages/cronet-fetch-darwin-arm64/*.dylib
-packages/cronet-fetch-darwin-arm64/*.dat
-packages/cronet-fetch-linux-x64-gnu/*.so
-packages/cronet-fetch-linux-x64-gnu/*.dat
 
-# ICU data
-icudtl.dat
+# ICU data (root copy)
+/icudtl.dat
 
 # OS
 .DS_Store
