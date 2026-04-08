@@ -1,0 +1,12 @@
+[package]
+name = "cronet"
+version = "0.1.0"
+edition = "2021"
+description = "Safe Rust wrapper around the Cronet networking library"
+
+[dependencies]
+cronet-sys = { path = "../cronet-sys" }
+tokio = { version = "1", features = ["rt", "sync"] }
+thiserror = "2"
+bytes = "1"
+serde_json = "1"

@@ -1,0 +1,14 @@
+{
+  "name": "@aspect-build/cronet-fetch-darwin-arm64",
+  "version": "0.1.0",
+  "os": ["darwin"],
+  "cpu": ["arm64"],
+  "main": "cronet-node.darwin-arm64.node",
+  "files": [
+    "cronet-node.darwin-arm64.node",
+    "libcronet.dylib",
+    "icudtl.dat"
+  ],
+  "description": "Cronet native bindings for macOS ARM64",
+  "license": "MIT"
+}

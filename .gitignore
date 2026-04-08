@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+target/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Chromium source (fetched at build time)
+chromium/
+depot_tools/
+
+# Native addon binaries (built per-platform)
+*.node
+
+# Cronet shared libraries (built from source)
+packages/cronet-sys/lib/
+packages/cronet-fetch-darwin-arm64/*.dylib
+packages/cronet-fetch-darwin-arm64/*.dat
+packages/cronet-fetch-linux-x64-gnu/*.so
+packages/cronet-fetch-linux-x64-gnu/*.dat
+
+# ICU data
+icudtl.dat
+
+# OS
+.DS_Store

@@ -1,0 +1,50 @@
+diff --git a/components/cronet/cronet_global_state_stubs.cc b/components/cronet/cronet_global_state_stubs.cc
+index f73a878a2efdf..3237609d45f38 100644
+--- a/components/cronet/cronet_global_state_stubs.cc
++++ b/components/cronet/cronet_global_state_stubs.cc
+@@ -7,6 +7,7 @@
+ #include <tuple>
+ 
+ #include "base/at_exit.h"
++#include "base/command_line.h"
+ #include "base/feature_list.h"
+ #include "base/notimplemented.h"
+ #include "base/task/sequenced_task_runner.h"
+@@ -31,6 +32,10 @@ scoped_refptr<base::SingleThreadTaskRunner> InitializeAndCreateTaskRunner() {
+   std::ignore = new base::AtExitManager;
+ #endif
+ 
++  if (!base::CommandLine::InitializedForCurrentProcess()) {
++    base::CommandLine::Init(0, nullptr);
++  }
++
+   base::FeatureList::InitInstance(std::string(), std::string());
+ 
+   // Note that in component builds this ThreadPoolInstance will be shared with
+diff --git a/components/cronet/url_request_context_config.cc b/components/cronet/url_request_context_config.cc
+index 2b8d013528ca1..7294933026059 100644
+--- a/components/cronet/url_request_context_config.cc
++++ b/components/cronet/url_request_context_config.cc
+@@ -916,7 +916,7 @@ URLRequestContextConfigBuilder::Build() {
+       experimental_options, std::move(mock_cert_verifier),
+       enable_network_quality_estimator,
+       bypass_public_key_pinning_for_local_trust_anchors,
+-      network_thread_priority, std::optional<cronet::proto::ProxyOptions>());
++      network_thread_priority, std::move(proxy_options));
+ }
+ 
+ }  // namespace cronet
+diff --git a/components/cronet/url_request_context_config.h b/components/cronet/url_request_context_config.h
+index f9dc91c1ca30c..e8f47a8bb5365 100644
+--- a/components/cronet/url_request_context_config.h
++++ b/components/cronet/url_request_context_config.h
+@@ -329,6 +329,9 @@ struct URLRequestContextConfigBuilder {
+   // On Android, corresponds to android.os.Process.setThreadPriority() values.
+   // Do not specify for other targets.
+   std::optional<int> network_thread_priority;
++
++  // Optional proxy configuration.
++  std::optional<cronet::proto::ProxyOptions> proxy_options;
+ };
+ 
+ }  // namespace cronet

@@ -1,0 +1,14 @@
+{
+  "name": "@aspect-build/cronet-fetch-linux-x64-gnu",
+  "version": "0.1.0",
+  "os": ["linux"],
+  "cpu": ["x64"],
+  "main": "cronet-node.linux-x64-gnu.node",
+  "files": [
+    "cronet-node.linux-x64-gnu.node",
+    "libcronet.so",
+    "icudtl.dat"
+  ],
+  "description": "Cronet native bindings for Linux x86-64",
+  "license": "MIT"
+}

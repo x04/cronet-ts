@@ -1,0 +1,47 @@
+# Build cronet-node (.node native addon) for Linux x86-64.
+# Requires libcronet.so to already be built (via Dockerfile.cronet-linux).
+#
+# Usage:
+#   docker build --platform linux/amd64 -f docker/Dockerfile.cronet-node-linux -t cronet-node-linux .
+#   id=$(docker create cronet-node-linux)
+#   docker cp $id:/out/cronet-node.linux-x64-gnu.node ./
+#   docker rm $id
+
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential ca-certificates curl git pkg-config libssl-dev \
+    libnss3-dev libnspr4-dev libclang-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Node.js 22
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+# Copy the prebuilt libcronet.so into the expected lib directory
+COPY packages/cronet-sys/lib/Linux-x86_64/libcronet.so packages/cronet-sys/lib/Linux-x86_64/libcronet.so
+
+# Copy workspace Cargo files
+COPY Cargo.toml Cargo.lock* ./
+
+# Copy all package sources
+COPY packages/cronet-sys/ packages/cronet-sys/
+COPY packages/cronet/ packages/cronet/
+COPY packages/cronet-node/ packages/cronet-node/
+
+# Build the native addon
+RUN cargo build -p cronet-node --release
+
+# Copy the .node artifact to /out
+RUN mkdir -p /out && \
+    cp target/release/libcronet_node.so /out/cronet-node.linux-x64-gnu.node && \
+    ls -lh /out/

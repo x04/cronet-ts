@@ -1,0 +1,11 @@
+[package]
+name = "cronet-sys"
+version = "0.1.0"
+edition = "2021"
+description = "Raw FFI bindings to the Cronet C API"
+
+[build-dependencies]
+bindgen = "0.71"
+
+[features]
+default = []

@@ -1,0 +1,23 @@
+{
+  "name": "cronet-node",
+  "version": "0.1.0",
+  "description": "Cronet native addon for Node.js via napi-rs",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "scripts": {
+    "build": "napi build --platform --release",
+    "build-debug": "napi build --platform"
+  },
+  "devDependencies": {
+    "@napi-rs/cli": "^2.18.0"
+  },
+  "optionalDependencies": {
+    "@aspect-build/cronet-fetch-darwin-arm64": "0.1.0",
+    "@aspect-build/cronet-fetch-darwin-x64": "0.1.0",
+    "@aspect-build/cronet-fetch-linux-x64-gnu": "0.1.0"
+  },
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ]
+}
