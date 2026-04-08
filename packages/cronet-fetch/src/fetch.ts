@@ -53,6 +53,8 @@ function getNative(): NativeModule | null {
 // Eagerly attempt load so `usingCronet` is set before first call
 getNative();
 
+let engineDisableCookieJar = false;
+
 if (!usingCronet && !process.env.CRONET_FETCH_SILENT) {
   console.warn(
     "[cronet-fetch] Native Cronet bindings not available for this platform; falling back to globalThis.fetch. " +
@@ -68,11 +70,15 @@ export interface CronetEngineInit {
   cacheMode?: string;
   cacheMaxSize?: number;
   proxyUrl?: string;
+  /** Disable Cronet's internal cookie jar. Each request gets a fresh engine so no cookies leak between requests. */
+  disableCookieJar?: boolean;
 }
 
 export interface CronetFetchInit extends CronetRequestInit {
   /** Per-request proxy URL, e.g. "http://proxy:8080" or "https://proxy:8443" */
   proxy?: string;
+  /** Disable Cronet's internal cookie jar for this request. Overrides the engine-level setting. */
+  disableCookieJar?: boolean;
 }
 
 /**
@@ -84,6 +90,7 @@ export interface CronetFetchInit extends CronetRequestInit {
 export function initEngine(config?: CronetEngineInit): void {
   const n = getNative();
   if (n) {
+    engineDisableCookieJar = config?.disableCookieJar ?? false;
     n.initEngine(config as Record<string, unknown> | undefined);
   }
 }
@@ -145,6 +152,7 @@ export async function fetch(
     maxRedirects: 20,
     disableCache: request.cache === "no-store" || request.cache === "reload",
     proxyUrl: init?.proxy,
+    disableCookieJar: init?.disableCookieJar ?? engineDisableCookieJar,
   };
 
   // Set up abort handling
@@ -237,6 +245,7 @@ export async function fetchStreaming(
     maxRedirects: 20,
     disableCache: request.cache === "no-store" || request.cache === "reload",
     proxyUrl: init?.proxy,
+    disableCookieJar: init?.disableCookieJar ?? engineDisableCookieJar,
   };
 
   // Create a ReadableStream that receives chunks from the native layer

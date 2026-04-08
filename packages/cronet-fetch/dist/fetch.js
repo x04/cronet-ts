@@ -37,6 +37,7 @@ function getNative() {
 }
 // Eagerly attempt load so `usingCronet` is set before first call
 getNative();
+let engineDisableCookieJar = false;
 if (!usingCronet && !process.env.CRONET_FETCH_SILENT) {
     console.warn("[cronet-fetch] Native Cronet bindings not available for this platform; falling back to globalThis.fetch. " +
         "Set CRONET_FETCH_SILENT=1 to suppress this warning.");
@@ -50,6 +51,7 @@ if (!usingCronet && !process.env.CRONET_FETCH_SILENT) {
 export function initEngine(config) {
     const n = getNative();
     if (n) {
+        engineDisableCookieJar = config?.disableCookieJar ?? false;
         n.initEngine(config);
     }
 }
@@ -104,6 +106,7 @@ export async function fetch(input, init) {
         maxRedirects: 20,
         disableCache: request.cache === "no-store" || request.cache === "reload",
         proxyUrl: init?.proxy,
+        disableCookieJar: init?.disableCookieJar ?? engineDisableCookieJar,
     };
     // Set up abort handling
     let abortHandler;
@@ -184,6 +187,7 @@ export async function fetchStreaming(input, init) {
         maxRedirects: 20,
         disableCache: request.cache === "no-store" || request.cache === "reload",
         proxyUrl: init?.proxy,
+        disableCookieJar: init?.disableCookieJar ?? engineDisableCookieJar,
     };
     // Create a ReadableStream that receives chunks from the native layer
     let streamController;
